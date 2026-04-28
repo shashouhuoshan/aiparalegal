@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      target: prod
+    platform: linux/arm64
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    env_file: .env.production
+    restart: unless-stopped
