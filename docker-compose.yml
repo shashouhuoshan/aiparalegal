@@ -10,5 +10,6 @@ services:
       - ./:/app
       - /app/node_modules
       - ./data:/app/data
+      - ./tessdata:/tessdata
     env_file: .env.local
     restart: unless-stopped

@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3', 'pdf-parse', 'mammoth'],
+    serverComponentsExternalPackages: ['better-sqlite3', 'pdf-parse', 'mammoth', 'tesseract.js', 'pdf2pic', 'jszip'],
   },
 };
 

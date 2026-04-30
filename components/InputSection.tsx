@@ -25,7 +25,13 @@ export function InputSection({ onResult }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] },
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp'],
+    },
     maxFiles: 10,
   });
 
@@ -101,7 +107,7 @@ export function InputSection({ onResult }: Props) {
 
       {/* 文件上传 */}
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">上传材料（PDF / DOCX，最多10个）</p>
+        <p className="mb-2 text-sm font-medium text-gray-700">上传材料（PDF / DOCX / 图片，最多10个）</p>
         <div
           {...getRootProps()}
           className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${

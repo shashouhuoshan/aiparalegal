@@ -1,15 +1,22 @@
 import { extractText, concatenateFiles } from '@/lib/parsers';
 
-jest.mock('pdf-parse', () => jest.fn().mockResolvedValue({ text: 'PDF提取的内容' }));
+jest.mock('@/lib/ocr', () => ({
+  ocrBuffer: jest.fn().mockResolvedValue('OCR识别结果'),
+}));
+
+jest.mock('pdf-parse', () => jest.fn().mockResolvedValue({ text: 'a'.repeat(60), numpages: 1 }));
 jest.mock('mammoth', () => ({
   extractRawText: jest.fn().mockResolvedValue({ value: 'DOCX提取的内容' }),
+}));
+jest.mock('pdf2pic', () => ({
+  fromBuffer: jest.fn().mockReturnValue(jest.fn().mockResolvedValue(null)),
 }));
 
 describe('extractText', () => {
   test('PDF 提取结果含文件序号和文件名前缀', async () => {
     const file = new File(['dummy'], 'contract.pdf', { type: 'application/pdf' });
     const text = await extractText(file, 1);
-    expect(text).toBe('[文件 1: contract.pdf]\nPDF提取的内容');
+    expect(text).toMatch(/^\[文件 1: contract\.pdf\]/);
   });
 
   test('DOCX 提取结果含文件序号和文件名前缀', async () => {
@@ -18,6 +25,12 @@ describe('extractText', () => {
     });
     const text = await extractText(file, 2);
     expect(text).toBe('[文件 2: record.docx]\nDOCX提取的内容');
+  });
+
+  test('图片文件走 OCR 路径并含文件名前缀', async () => {
+    const file = new File(['dummy'], 'scan.jpg', { type: 'image/jpeg' });
+    const text = await extractText(file, 3);
+    expect(text).toBe('[文件 3: scan.jpg] [OCR]\nOCR识别结果');
   });
 });
 

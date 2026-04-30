@@ -1,6 +1,6 @@
 # 劳动争议 AI 分析工具
 
-面向律师的劳动争议案件焦点分析工具。上传案件材料（PDF / DOCX），AI 自动识别争议焦点、引用法条、提示风险，律师提交反馈评分。
+面向律师的劳动争议案件焦点分析工具。上传案件材料（PDF / DOCX / 图片），AI 自动识别争议焦点、引用法条、提示风险，律师提交反馈评分。支持扫描件 OCR 识别。
 
 > **验证版**：目标用户 ≤ 20 名种子律师，使用周期 2–4 周，用于验证产品市场契合度。
 
@@ -14,7 +14,7 @@
 | 样式 | Tailwind CSS + shadcn/ui |
 | LLM | OpenAI SDK（默认接 DeepSeek，改 env 切换 provider） |
 | 数据库 | SQLite + better-sqlite3 |
-| 文件解析 | pdf-parse + mammoth（不支持 OCR） |
+| 文件解析 | pdf-parse + mammoth + tesseract.js（OCR：扫描版 PDF、图片、DOCX 嵌入图） |
 | 校验 | zod |
 | 容器 | Docker + Docker Compose |
 
@@ -29,8 +29,8 @@
 cp .env.local.example .env.local
 # 编辑 .env.local，填入 LLM_API_KEY
 
-# 2. 创建数据目录并启动
-mkdir -p data
+# 2. 创建数据目录和 tessdata 缓存目录并启动
+mkdir -p data tessdata
 docker compose up -d --build
 
 # 3. 初始化数据库
@@ -62,7 +62,22 @@ LLM_BASE_URL=https://api.deepseek.com/v1
 DATABASE_PATH=/app/data/legal-ai.db
 INVITE_SECRET=           # openssl rand -base64 32
 BASE_URL=http://localhost:3000
+TESSDATA_PATH=/tessdata  # OCR 语言包路径（容器内，挂载自 ./tessdata）
 ```
+
+### OCR 语言包（可选预下载）
+
+首次 OCR 请求时会自动从 CDN 下载中文语言包（约 20 MB）。如需提前缓存（避免生产环境依赖外网），在容器启动后执行一次：
+
+```bash
+docker compose exec app node -e "
+  require('tesseract.js').createWorker('chi_sim+eng', 1, {
+    langPath: '/tessdata', cachePath: '/tessdata', logger: m => process.stdout.write('.')
+  }).then(() => { console.log('\nDone'); process.exit(0); })
+"
+```
+
+语言包文件将保存到 `./tessdata/`，后续重建镜像无需重新下载。
 
 ### 切换 LLM Provider（无需改代码）
 
@@ -126,7 +141,8 @@ components/
   FeedbackForm.tsx          # 5 星评分 + 必填评论
 lib/
   schema.ts                 # zod schema（LLM 输出结构）
-  parsers.ts                # PDF / DOCX 文本提取
+  parsers.ts                # PDF / DOCX / 图片文本提取（含 OCR 路径）
+  ocr.ts                    # tesseract.js 单例 Worker（chi_sim+eng）
   db.ts                     # SQLite 连接 + 增删查封装
   llm.ts                    # OpenAI 客户端（env 配置）
   prompts.ts                # 系统 prompt 模板
@@ -155,7 +171,7 @@ middleware.ts               # token 格式校验（Edge runtime）
 docker compose exec app pnpm test
 ```
 
-覆盖范围：`lib/schema`（4）、`lib/parsers`（4）、`lib/db`（5）、`/api/analyze`（3）、`/api/feedback`（2），共 **18 个用例**。
+覆盖范围：`lib/schema`（4）、`lib/parsers`（5）、`lib/db`（5）、`/api/analyze`（3）、`/api/feedback`（2），共 **19 个用例**。
 
 UI 组件不写自动化测试，见手动测试清单（`mvp_requirements.md` 第 9.3 节）。
 
