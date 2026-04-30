@@ -45,12 +45,7 @@ export function InputSection({ onResult }: Props) {
       form.append('caseNote', caseNote);
       files.forEach((f) => form.append('files', f));
 
-      const token = localStorage.getItem('invite_token') ?? '';
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        body: form,
-        headers: token ? { cookie: `invite_token=${token}` } : {},
-      });
+      const res = await fetch('/api/analyze', { method: 'POST', body: form });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? '请求失败，请重试');
